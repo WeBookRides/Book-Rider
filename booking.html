@@ -1,79 +1,25 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Book a Ride</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDqiCJSG0FP2klSdgjeD0bWI2peEcA0huo&libraries=places"></script>
-</head>
-<body>
-  <header>
-    <h1>Book Your Ride</h1>
-  </header>
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Book a Ride</title><link rel="stylesheet" href="styles.css"></head><body>
+<header><div class="container"><div class="logo">Ride Booker</div><nav><ul class="nav-links"><li><a href="index.html">Home</a></li><li><a href="booking.html">Book</a></li><li><a href="payment.html">Payment</a></li><li><a href="signup.html">Sign Up</a></li><li><a href="login.html">Login</a></li></ul></nav><div style="clear:both"></div></div></header>
+<section class="form-section"><div class="container"><h2 style="text-align:center">Book Your Ride</h2>
+<form id="rideForm" style="max-width:480px;margin:auto;"><label>Pickup Location</label><input id="pickup" type="text" placeholder="Enter pickup address" required><label>Destination</label><input id="destination" type="text" placeholder="Enter destination address" required><button type="button" onclick="calculateFare()" class="btn">Calculate Fare</button></form>
+<div id="fareDisplay" style="text-align:center;margin-top:20px;font-size:18px"></div>
+<div id="map"></div>
+<div id="paypal-button-container"></div>
+</div></section>
+<footer><div class="container">&copy; 2025 Ride Booker</div></footer>
 
-  <main class="booking-container">
-    <label for="pickup">Pickup Location:</label>
-    <input type="text" id="pickup" placeholder="Enter pickup location">
-
-    <label for="destination">Destination:</label>
-    <input type="text" id="destination" placeholder="Enter destination">
-
-    <button onclick="calculateFare()">Calculate Fare</button>
-
-    <p id="distanceOutput"></p>
-    <p id="fareOutput"></p>
-
-    <a href="payment.html" id="proceedBtn" class="hidden">
-      <button>Proceed to Payment</button>
-    </a>
-  </main>
-
-  <script>
-    let pickupAutocomplete, destinationAutocomplete;
-
-    function initAutocomplete() {
-      pickupAutocomplete = new google.maps.places.Autocomplete(document.getElementById('pickup'));
-      destinationAutocomplete = new google.maps.places.Autocomplete(document.getElementById('destination'));
-    }
-
-    function calculateFare() {
-      const pickup = document.getElementById('pickup').value;
-      const destination = document.getElementById('destination').value;
-
-      if (!pickup || !destination) {
-        alert("Please enter both locations.");
-        return;
-      }
-
-      const service = new google.maps.DistanceMatrixService();
-      service.getDistanceMatrix({
-        origins: [pickup],
-        destinations: [destination],
-        travelMode: 'DRIVING',
-      }, (response, status) => {
-        if (status !== 'OK') {
-          alert('Error calculating distance.');
-          return;
-        }
-
-        const distanceText = response.rows[0].elements[0].distance.text;
-        const distanceMiles = parseFloat(distanceText.replace(/[^\d.]/g, ''));
-        const fare = (distanceMiles * 1.5).toFixed(2);
-
-        document.getElementById('distanceOutput').innerText = `Distance: ${distanceMiles} miles`;
-        document.getElementById('fareOutput').innerText = `Fare: $${fare}`;
-        document.getElementById('proceedBtn').classList.remove('hidden');
-      });
-    }
-
-    window.onload = initAutocomplete;
-  </script>
-
-  <style>
-    .hidden {
-      display: none;
-    }
-  </style>
-</body>
-</html>
+<!-- Google Maps API: replace YOUR_API_KEY -->
+<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDqiCJSG0FP2klSdgjeD0bWI2peEcA0huo&libraries=places"></script>
+<!-- PayPal SDK: replace YOUR_CLIENT_ID -->
+<script src="https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID&currency=USD"></script>
+<script>
+let fareAmount=0;let map,directionsService,directionsRenderer;
+function initMap(){map=new google.maps.Map(document.getElementById('map'),{center:{lat:37.7749,lng:-122.4194},zoom:12});directionsService=new google.maps.DirectionsService();directionsRenderer=new google.maps.DirectionsRenderer();directionsRenderer.setMap(map);new google.maps.places.Autocomplete(document.getElementById('pickup'));new google.maps.places.Autocomplete(document.getElementById('destination'));}
+function calculateFare(){const pickup=document.getElementById('pickup').value,destination=document.getElementById('destination').value;if(!pickup||!destination){alert('Please enter both pickup and destination.');return;}
+directionsService.route({origin:pickup,destination:destination,travelMode:'DRIVING'},(result,status)=>{if(status==='OK'){directionsRenderer.setDirections(result);}else{alert('Could not display directions: '+status);}});
+const service=new google.maps.DistanceMatrixService();service.getDistanceMatrix({origins:[pickup],destinations:[destination],travelMode:'DRIVING',unitSystem:google.maps.UnitSystem.IMPERIAL},function(response,status){if(status!=='OK'){alert('Error calculating distance: '+status);return;}const distanceText=response.rows[0].elements[0].distance.text;const distanceMiles=parseFloat(distanceText.replace(' mi',''));fareAmount=(distanceMiles*1.5).toFixed(2);document.getElementById('fareDisplay').innerHTML=`Distance: ${distanceMiles} miles<br>Fare: <strong>$${fareAmount}</strong>`;renderPayPalButton();});}
+function renderPayPalButton(){document.getElementById('paypal-button-container').innerHTML='';paypal.Buttons({createOrder:function(data,actions){return actions.order.create({purchase_units:[{amount:{value:fareAmount}}]});},onApprove:function(data,actions){return actions.order.capture().then(function(details){alert('Payment completed by '+details.payer.name.given_name);window.location.href='confirmation.html';});}}).render('#paypal-button-container');}
+google.maps.event.addDomListener(window,'load',initMap);
+</script>
+</body></html>
